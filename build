@@ -1,0 +1,4 @@
+# ~/.xmonad/build
+#!/bin/sh
+stack build
+cp $(stack exec which xmonad-exe) "$1"
