@@ -23,6 +23,7 @@ source-repository head
 executable xmonad-exe
   main-is: Main.hs
   other-modules:
+      WorkspaceColours
       Paths_xmonad_exe
   hs-source-dirs:
       app
@@ -30,6 +31,7 @@ executable xmonad-exe
   build-depends:
       base >=4.7 && <5
     , containers
+    , process
     , xmonad
     , xmonad-contrib
   default-language: Haskell2010

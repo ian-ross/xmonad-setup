@@ -1,4 +1,5 @@
 # ~/.xmonad/build
 #!/bin/sh
 stack build
+rm -f "$1"
 cp $(stack exec which xmonad-exe) "$1"

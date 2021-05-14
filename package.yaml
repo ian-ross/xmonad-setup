@@ -21,5 +21,6 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - containers
+    - process
     - xmonad
     - xmonad-contrib

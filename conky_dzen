@@ -1,0 +1,26 @@
+conky.config = {
+  background = true,
+  out_to_console = true,
+  out_to_x = false,
+  update_interval = 1,
+  font = 'Liberation Mono:pixelsize=10:antialias=true:autohint=true',
+};
+
+conky.text = [[
+^fg(\#DDDDDD)^i(/home/iross/.xmonad/dzen2/battery.xbm) \
+${if_match ${battery_percent} > 25}^fg(\#00AA4A)${endif}\
+${if_match ${battery_percent} <= 25}\
+${if_match ${battery_percent} > 10}^fg(\#DDDD00)${else}^fg(\#FF0000)${endif}\
+${endif}\
+${battery_percent}%  \
+^fg(\#DDDDDD)^i(/home/iross/.xmonad/dzen2/cpu.xbm) \
+${cpu}%  \
+^i(/home/iross/.xmonad/dzen2/mem.xbm) ${memperc}%  \
+^i(/home/iross/.xmonad/dzen2/temp.xbm) \
+${if_match ${acpitemp} <= 35}^fg(\#00AA4A)${endif}\
+${if_match ${acpitemp} > 35}\
+${if_match ${acpitemp} <= 85}^fg(\#DDDD00)${else}^fg(\#FF0000)${endif}\
+${endif}\
+${acpitemp}°C  \
+^fg(\#FFFFFF)${time %Y-%m-%d} ^fg(\#EBAC54)${time %R}
+]];

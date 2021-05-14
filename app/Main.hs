@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
 import Control.Monad (liftM)
@@ -15,10 +16,14 @@ import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.ManageHelpers (isDialog)
 import XMonad.Hooks.SetWMName
 import XMonad.Layout.NoBorders
+import XMonad.Layout.Tabbed
 import XMonad.Layout.ToggleLayouts
+import XMonad.Layout.TwoPane
 import qualified XMonad.StackSet as W
 import XMonad.Util.EZConfig (additionalKeys, additionalMouseBindings)
 import XMonad.Util.Run (spawnPipe)
+
+import WorkspaceColours
 
 mMask :: KeyMask
 mMask = mod4Mask
@@ -27,7 +32,7 @@ font :: String
 font = "Liberation Sans:pixelsize=15:antialias=true:autohint=true"
 
 gsConfig :: HasColorizer a => GSConfig a
-gsConfig = def {gs_font = "xft:" ++ font}
+gsConfig = def { gs_font = "xft:" ++ font }
 
 bmDir :: String
 bmDir = "/home/iross/.xmonad/dzen2"
@@ -45,8 +50,20 @@ conkyBar =
     ++ "' -dock -x '1350' -w '420' -h '24' -ta 'r' "
     ++ "-bg '#1B1D1E' -fg '#FFFFFF' -y '0'"
 
+icon :: String -> String
+icon name = "^i(" ++ bmDir ++ "/" ++ name ++ ".xbm)"
+
+wsColoursConf :: WorkspaceColoursConf
+wsColoursConf = WorkspaceColoursConf
+  { defaultColour = "alice blue"
+  , colours =
+    WorkspaceColours [ ("1", "bisque"), ("2", "light sea green"), ("3", "powder blue")
+                     , ("4", "light salmon"), ("5", "sea green"), ("6", "royal blue")
+                     , ("7", "salmon"), ("8", "dark sea green"), ("9", "steel blue") ]
+  }
+
 myLogHook :: Handle -> X ()
-myLogHook h =
+myLogHook h = do
   dynamicLogWithPP $
     def
       { ppCurrent = dzenColor "#ebac54" "#1B1D1E" . (' ' :),
@@ -60,9 +77,11 @@ myLogHook h =
         ppLayout =
           dzenColor "#ebac54" "#1B1D1E"
             . ( \x -> case x of
-                  "Tall" -> "^i(" ++ bmDir ++ "/tall.xbm)"
-                  "Mirror Tall" -> "^i(" ++ bmDir ++ "/mtall.xbm)"
-                  "Full" -> "^i(" ++ bmDir ++ "/full.xbm)"
+                  "Tall" -> icon "tall"
+                  "Mirror Tall" -> icon "mtall"
+                  "Full" -> icon "full"
+                  "TwoPane" -> icon "half"
+                  ('T':'a':'b':'b':'e':'d':_) -> icon "mouse"
                   "Simple Float" -> "~"
                   _ -> x
               ),
@@ -72,6 +91,7 @@ myLogHook h =
             . dzenEscape,
         ppOutput = hPutStrLn h
       }
+  workspaceColours wsColoursConf
 
 wwin :: X ()
 wwin = warpToWindow (19 % 20) (19 % 20)
@@ -110,9 +130,9 @@ main = do
                                 ]
                              ++ [ ( (mMask, key),
                                     screenWorkspace sc
-                                      >>= \wsm -> case wsm of
+                                      >>= \case
                                         Nothing -> return ()
-                                        Just ws -> (windows $ W.view ws) >> (warpToScreen sc (1 % 2) (1 % 2))
+                                        Just ws -> windows (W.view ws) >> warpToScreen sc (1 % 2) (1 % 2)
                                   )
                                   | (key, sc) <- zip [xK_e, xK_w] [0 ..]
                                 ]
@@ -138,13 +158,18 @@ main = do
 
 myLayoutHook =
   avoidStruts $
-    toggleLayouts (noBorders Full) $
-      (tiled ||| Mirror tiled ||| Full)
+    toggleLayouts (noBorders Full) (tiled ||| Mirror tiled ||| Full ||| tabs ||| twopane)
   where
     tiled = Tall nmaster delta ratio
     nmaster = 1
     ratio = 1 / 2
     delta = 3 / 100
+    twopane = TwoPane (3/100) (1/2)
+    tabs = tabbed shrinkText def { fontName = "xft:" ++ font
+                                 , decoHeight = 32
+                                 , activeColor = "#FFA500"
+                                 , activeBorderColor = "#FFA500"
+                                 , activeTextColor = "#000000" }
 
 specialManageHook =
   composeAll . concat $
@@ -154,11 +179,11 @@ specialManageHook =
       [title `isPrefixedBy` tp --> doFloat | tp <- myTPrefixFloats],
       [className `isSuffixedBy` ".py" --> doFloat],
       [resource =? r --> doFloat | r <- myRFloats],
-      [ (qNot isDialog) <&&> ((x `isInfixOf`) <$> className) --> doShift ws
+      [  qNot isDialog <&&> ((x `isInfixOf`) <$> className) --> doShift ws
         | (ws, xs) <- myShifts,
           x <- xs
       ],
-      [ (qNot isDialog)
+      [  qNot isDialog
           <&&> (className =? x <||> title =? x <||> resource =? x) --> doShift ws
         | (ws, xs) <- myShifts,
           x <- xs
@@ -183,7 +208,7 @@ isSuffixedBy :: Query String -> String -> Query Bool
 q `isSuffixedBy` x = fmap (x `isSuffixOf`) q
 
 qNot :: Monad m => m Bool -> m Bool
-qNot = liftM not
+qNot = fmap not
 
 appList :: [String]
 appList =
